@@ -5,10 +5,10 @@ Self-contained version optimized for direct model ID usage
 """
 
 import boto3
+from botocore.config import Config
 import pandas as pd
 from IPython.display import display
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # Global pricing data
 _external_pricing_data = None
@@ -111,22 +111,51 @@ def calculate_metrics(llm_call):
         llm_call.throughput_tokens_per_sec = 0
         llm_call.throughput_words_per_sec = 0
 
-def _bedrock_call_with_timeout(client, model_id, prompt, timeout_seconds=30):
-    """Execute Bedrock call with timeout"""
+def _bedrock_call_with_timeout(client, model_id, prompt, timeout_single_llm_sec=30):
+    """Execute Bedrock call with timeout - processes entire stream"""
+    start_time = time.time()
     response = client.converse_stream(
         modelId=model_id,
         messages=[{"role": "user", "content": [{"text": prompt}]}],
         inferenceConfig={"maxTokens": 2048, "temperature": 0.7}
     )
-    return response
+    
+    # Process the entire stream within this function so timeout applies to everything
+    result = {
+        'response_text': '',
+        'input_tokens': 0,
+        'output_tokens': 0,
+        'ttft': None,
+        'total_time': 0
+    }
+    
+    first_token = True
+    
+    for event in response['stream']:
+        if 'contentBlockDelta' in event:
+            delta = event['contentBlockDelta']['delta']
+            if 'text' in delta:
+                if first_token:
+                    result['ttft'] = time.time() - start_time
+                    first_token = False
+                result['response_text'] += delta['text']
+        
+        elif 'messageStop' in event:
+            result['total_time'] = time.time() - start_time
+        
+        elif 'metadata' in event:
+            usage = event['metadata'].get('usage', {})
+            result['input_tokens'] = usage.get('inputTokens', 100)
+            result['output_tokens'] = usage.get('outputTokens', len(result['response_text'].split()))
+    
+    return result
 
-def call_bedrock_sync(llm_call, prompt, pricing_data=None, timeout_seconds=30):
+def call_bedrock_sync(llm_call, prompt, pricing_data=None, timeout_single_llm_sec=30):
     """Synchronous call to Bedrock with region fallback and cross-region retry"""
     
     regions_to_try = ['us-east-1', 'us-west-2']
     
     llm_call.status = "Calling..."
-    first_token = True
     
     # List of model IDs to try (original + cross-region prefixes)
     model_ids_to_try = [llm_call.model_id]
@@ -137,23 +166,18 @@ def call_bedrock_sync(llm_call, prompt, pricing_data=None, timeout_seconds=30):
     
     # Try each region
     for region in regions_to_try:
-        client = boto3.client('bedrock-runtime', region_name=region)
+        config = Config(
+            read_timeout=timeout_single_llm_sec,
+            connect_timeout=10,
+            retries={'max_attempts': 0}
+        )
+        client = boto3.client('bedrock-runtime', region_name=region, config=config)
         
         # Try each model ID variant in this region
         for attempt, model_id in enumerate(model_ids_to_try):
             try:
-                if region != 'us-east-1' or attempt > 0:
-                    print(f"  🔄 Trying region {region} with model ID: {model_id}")
-
-                start_time = time.time()
-                
-                # Execute Bedrock call with timeout
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(_bedrock_call_with_timeout, client, model_id, prompt, timeout_seconds)
-                    try:
-                        response = future.result(timeout=timeout_seconds)
-                    except TimeoutError:
-                        raise Exception(f"Request timed out after {timeout_seconds} seconds")
+                # Execute Bedrock call with boto3 timeout (timing handled inside function)
+                result = _bedrock_call_with_timeout(client, model_id, prompt, timeout_single_llm_sec)
                 
                 # Success - update model info
                 if region != 'us-east-1' or attempt > 0:
@@ -161,43 +185,25 @@ def call_bedrock_sync(llm_call, prompt, pricing_data=None, timeout_seconds=30):
                 
                 llm_call.model_id = model_id
                 llm_call.successful_region = region
-                llm_call.status = "Streaming..."
+                llm_call.status = "Complete"
+                llm_call.response = result['response_text']
+                llm_call.ttft = result['ttft'] if result['ttft'] is not None else -1
+                llm_call.latency = result['total_time']  # Complete time from boto3 call to end
+                llm_call.input_tokens = result['input_tokens']
+                llm_call.output_tokens = result['output_tokens']
                 
-                for event in response['stream']:
-                    if 'contentBlockDelta' in event:
-                        delta = event['contentBlockDelta']['delta']
-                        if 'text' in delta:
-                            if first_token:
-                                llm_call.ttft = time.time() - start_time
-                                first_token = False
-                            llm_call.response += delta['text']
-                    
-                    elif 'messageStop' in event:
-                        llm_call.latency = time.time() - start_time
-                        llm_call.status = "Complete"
-                    
-                    elif 'metadata' in event:
-                        usage = event['metadata'].get('usage', {})
-                        llm_call.input_tokens = usage.get('inputTokens', 100)
-                        llm_call.output_tokens = usage.get('outputTokens', len(llm_call.response.split()))
-                        
-                        # Calculate metrics
-                        calculate_metrics(llm_call)
-                        
-                        # Calculate cost using original model_id for pricing lookup
-                        original_model_id = model_ids_to_try[0]
-                        llm_call.cost, llm_call.pricing_info = calculate_model_cost_simple(
-                            original_model_id, llm_call.input_tokens, llm_call.output_tokens, pricing_data)
+                # Calculate metrics
+                calculate_metrics(llm_call)
+                
+                # Calculate cost using original model_id for pricing lookup
+                original_model_id = model_ids_to_try[0]
+                llm_call.cost, llm_call.pricing_info = calculate_model_cost_simple(
+                    original_model_id, llm_call.input_tokens, llm_call.output_tokens, pricing_data)
                 
                 return  # Success
                 
             except Exception as e:
                 last_error = e
-                if region == 'us-east-1' and attempt == 0:
-                    print(f"  ❌ Failed in {region} with original model ID: {model_id}")
-                    print(f"     Error: {str(e)[:100]}...")
-                elif attempt < len(model_ids_to_try) - 1:
-                    print(f"  ❌ Failed in {region} with model ID: {model_id}")
                 continue
     
     # All attempts failed
@@ -232,7 +238,7 @@ def display_model_result(llm_call, index, total):
     print(f"Model ID:      {llm_call.model_id}")
     print(f"Region:        {get_region_display(llm_call)}")
     print(f"Latency:       {llm_call.latency:.2f}s")
-    print(f"TTFT:          {llm_call.ttft:.2f}s")
+    print(f"TTFT:          {llm_call.ttft:.3f}s")
     print(f"Input Tokens:  {llm_call.input_tokens}")
     print(f"Output Tokens: {llm_call.output_tokens}")
     
@@ -267,6 +273,7 @@ def display_model_result(llm_call, index, total):
         wrapped_response = wrap_text_by_words(llm_call.response, words_per_line=20)
         print(wrapped_response)
     print("─" * 80)
+    print()
 
 def create_results_dataframe(llm_calls):
     """Create results DataFrame from LLM calls"""
@@ -279,7 +286,7 @@ def create_results_dataframe(llm_calls):
             'Status': llm.status,
             'Cost_Cents': round(llm.cost * 100, 4),
             'Latency_s': round(llm.latency, 2),
-            'TTFT_s': round(llm.ttft, 2),
+            'TTFT_s': round(llm.ttft, 3),
             'Input_Tokens': llm.input_tokens,
             'Output_Tokens': llm.output_tokens,
             'Total_Tokens': llm.input_tokens + llm.output_tokens,
@@ -295,7 +302,7 @@ def create_results_dataframe(llm_calls):
     
     return pd.DataFrame(results_data)
 
-def compare_models_simple(models, prompt, pricing_data=None, timeout_seconds=30):
+def compare_models_simple(models, prompt, pricing_data=None, timeout_single_llm_sec=30):
     """
     Main function for comparing models in Jupyter notebooks
     
@@ -303,7 +310,7 @@ def compare_models_simple(models, prompt, pricing_data=None, timeout_seconds=30)
         models: List of model IDs or name:model_id strings
         prompt: The question/prompt to send to models
         pricing_data: Optional bedrock_pricing_json dict for real pricing
-        timeout_seconds: Timeout for each model call (default: 30 seconds)
+        timeout_single_llm_sec: Timeout for each model call (default: 30 seconds)
     
     Returns:
         DataFrame with results for further analysis
@@ -313,6 +320,7 @@ def compare_models_simple(models, prompt, pricing_data=None, timeout_seconds=30)
     model_configs = [parse_model_input(m) for m in models]
     
     print(f"🚀 Comparing {len(model_configs)} models...")
+    print(f"⏱️  Each model will timeout after {timeout_single_llm_sec} seconds")
     print(f"📝 Question: {prompt}")
     print("=" * 80)
     
@@ -343,7 +351,7 @@ def compare_models_simple(models, prompt, pricing_data=None, timeout_seconds=30)
     
     for i, llm_call in enumerate(llm_calls, 1):
         print(f"🔄 Running {i}/{len(llm_calls)}: {llm_call.name}")
-        call_bedrock_sync(llm_call, prompt, pricing_data, timeout_seconds)
+        call_bedrock_sync(llm_call, prompt, pricing_data, timeout_single_llm_sec)
         display_model_result(llm_call, i, len(llm_calls))
     
     total_time = time.time() - start_time
