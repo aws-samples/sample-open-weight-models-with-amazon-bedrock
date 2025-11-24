@@ -209,7 +209,8 @@ def call_bedrock_sync(llm_call, prompt, pricing_data=None, timeout_single_llm_se
     # All attempts failed
     llm_call.status = "Error"
     llm_call.response = f"Error (tried {len(regions_to_try)} regions with {len(model_ids_to_try)} model ID variants each): {str(last_error)}"
-    llm_call.latency = time.time() - start_time
+    llm_call.latency = timeout_single_llm_sec
+    llm_call.ttft = timeout_single_llm_sec
     llm_call.successful_region = None
     print(f"  ❌ All region and model ID attempts failed for {llm_call.name}")
 
