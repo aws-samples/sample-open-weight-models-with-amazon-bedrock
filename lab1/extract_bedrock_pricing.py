@@ -168,6 +168,34 @@ def get_bedrock_model_ids(verbose=False):
         log_info(f"❌ Error fetching Bedrock models: {e}")
         return {}
 
+def clean_model_display_name(raw_name):
+    """Clean up model display names from the pricing API.
+
+    The pricing API constructs names as '{provider} {model}' which often
+    produces redundant provider prefixes. We strip just the leading provider
+    word(s) when the model name already contains the brand.
+
+    Examples:
+      'DeepSeek DeepSeek v3.2'   -> 'DeepSeek v3.2'
+      'Nvidia NVIDIA Nemotron …' -> 'NVIDIA Nemotron …'
+      'Nvidia Nemotron Nano …'   -> 'Nemotron Nano …'
+      'Qwen Qwen3 32B'           -> 'Qwen3 32B'
+      'OpenAI gpt-oss-120b'      -> 'OpenAI gpt-oss-120b'  (no redundancy)
+      'Moonshot AI Kimi K2.5'    -> 'Moonshot AI Kimi K2.5' (no redundancy)
+    """
+    # Map: if raw_name starts with key, strip key and keep rest
+    provider_strip = {
+        "DeepSeek DeepSeek ": "DeepSeek ",
+        "Nvidia NVIDIA ":    "NVIDIA ",
+        "Nvidia Nemotron ":  "Nemotron ",
+        "Qwen Qwen":         "Qwen",       # "Qwen Qwen3" -> "Qwen3"
+    }
+    for prefix, replacement in provider_strip.items():
+        if raw_name.startswith(prefix):
+            return replacement + raw_name[len(prefix):]
+    return raw_name
+
+
 def extract_bedrock_model_pricing(verbose=False):
     """Extract detailed pricing for specific Bedrock models
     
@@ -373,9 +401,11 @@ def extract_bedrock_model_pricing(verbose=False):
                             actual_model_id = bedrock_id
                             break
             
+            display_name = clean_model_display_name(model)
+
             if actual_model_id:
                 BEDROCK_PRICING_USD_PER_1M_TOKENS[actual_model_id] = {
-                    "name": model,
+                    "name": display_name,
                     "input": round(input_per_1m, 2),
                     "output": round(output_per_1m, 2),
                     "region": region
@@ -386,7 +416,7 @@ def extract_bedrock_model_pricing(verbose=False):
                 model_clean = model.replace(' ', '_').lower().replace('__', '_')
                 fabricated_id = f"fabricated.{model_clean}"
                 BEDROCK_PRICING_USD_PER_1M_TOKENS[fabricated_id] = {
-                    "name": f"{model} ⚠️ FABRICATED ID",
+                    "name": f"{display_name} ⚠️ FABRICATED ID",
                     "input": round(input_per_1m, 2),
                     "output": round(output_per_1m, 2),
                     "region": region
