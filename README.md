@@ -1,7 +1,9 @@
-# re:Invent 2025 Model Builder session AIM311 
+# AWS Toronto Summit 2026 - AIM311 Builder Session
 
 ## Repo Overview
-This repository contains materials for the re:Invent 2025 Bedrock Open Weight Model Builder session, focusing on demonstrating the capabilities and advantages of open-weight models on Amazon Bedrock.
+This repository contains materials for the AWS Toronto Summit 2026 Bedrock Open Weight Model Builder session, focusing on demonstrating the capabilities and advantages of open-weight models on Amazon Bedrock.
+
+Originally developed for re:Invent 2025 and updated for Toronto Summit (June 3, 2026).
 
 ### Session Title
 Optimize open weight models for low-latency, cost-effective AI apps
@@ -16,14 +18,6 @@ Open-weight models deliver exceptional performance while offering customization 
   - **Low latency** across models
   - **Cost comparison** between different model options
   - **Accuracy differences** between standard and fine-tuned models
-
-
-### Session Speakers
-- Anastasia Tzeveleka
-- Jeremy Bartosiewicz
-- Luca Perrozzi
-- Chakra Nagarajan
-- Wale Akinfaderin
 
 ## Pillars for LLM Model Evaluation
 
@@ -60,7 +54,7 @@ pip install -r requirements.txt
 ```
 
 ### Lab 1: Model Selection & API Comparison
-Compare APIs and open-weight models (Llama, GPT OSS, Qwen, DeepSeek) to showcase Amazon Bedrock's capabilities.
+Compare APIs and open-weight models (NVIDIA Nemotron, GPT OSS, Qwen, DeepSeek, Kimi K2.5) to showcase Amazon Bedrock's capabilities.
 
 **Files:**
 - [`lab1/Lab1a_-_Model_Selection_Framework.ipynb`](lab1/Lab1a_-_Model_Selection_Framework.ipynb)
@@ -81,14 +75,20 @@ Evaluate quality, latency, and accuracy metrics with focus on tool calling and a
 
 
 
-## Recent Announcements (September 2025)
+## Models Covered
 
-### New Model Availability
-- [OpenAI Open Weight Models](https://aws.amazon.com/about-aws/whats-new/2025/09/open-ai-open-weight-models-new-regions-amazon-bedrock/): Expanded to new regions on AWS Bedrock
-- [DeepSeek-V3.1](https://aws.amazon.com/about-aws/whats-new/2025/09/deepseek-v3-1-model-fully-managed-amazon-bedrock/): Now available fully managed in Amazon Bedrock
-- [Qwen3 Models](https://aws.amazon.com/about-aws/whats-new/2025/09/qwen3-models-fully-managed-amazon-bedrock/): Now available fully managed in Amazon Bedrock
+### Lab 1 (Model Selection & API Integration)
+- **NVIDIA Nemotron 3 Super** (120B MoE) — Complex reasoning and agentic workflows
+- **NVIDIA Nemotron Nano 30B** — Cost-effective general-purpose
+- **Kimi K2.5** (Moonshot AI) — Multimodal (text + vision)
+- **GPT OSS 120B / 20B** (OpenAI) — Reasoning and cost-effective tiers
+- **Qwen3 235B MoE / 32B** — Reasoning with thinking mode / enterprise
+- **DeepSeek V3.2** — Cost-optimized high-volume
+- **Qwen3 Coder 480B / 30B** (bonus) — Code generation
 
-### Deployment Options
-- [On-demand Deployment](https://aws.amazon.com/about-aws/whats-new/2025/09/on-demand-deployment-custom-meta-llama-models-amazon-bedrock/): Custom Meta Llama models in Amazon Bedrock
+### Lab 2 (Evaluation)
+- **Qwen3 32B** & **GPT OSS 20B** — Automatic Model Evaluation (Lab 2a)
+- **NVIDIA Nemotron Nano 9B v2** & **Mistral 7B Instruct** — LLM-as-a-Judge (Lab 2b)
+- **Mistral Large** — Evaluator model (Lab 2b)
 
 

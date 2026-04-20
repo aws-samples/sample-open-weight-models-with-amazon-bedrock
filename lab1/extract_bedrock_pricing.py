@@ -44,14 +44,22 @@ def get_manual_model_mappings():
         "Nova Pro Latency Optimized": "amazon.nova-pro-v1:0:24k",  # Same as regular Nova Pro
         
         # Fix the 6 unmatched models based on search results
-        "DeepSeek DeepSeek V3.1": "deepseek.v3-v1:0",  # Correct DeepSeek V3.1 model ID
+        "DeepSeek DeepSeek V3.2": "deepseek.v3.2",  # DeepSeek V3.2 model ID
         "Meta Llama 3.1 405B": "meta.llama3-1-405b-instruct-v1:0",  # 405B model
         "Meta Llama 3.3 70B Custom": "meta.llama3-3-70b-instruct-v1:0",  # Custom variant
         "Mistral Mistral Large 2407": "mistral.mistral-large-2402-v1:0",  # 2407 maps to 2402
         "Qwen Qwen3 235B A22B 2507": "qwen.qwen3-235b-a22b-2507-v1:0",  # Maps to 32B dense
         "Qwen Qwen3 Coder 480B A35B": "qwen.qwen3-coder-30b-a3b-v1:0",  # Maps to 30B coder
         "Qwen3 32B (dense)": "qwen.qwen3-32b-v1:0",
-        
+
+        # NVIDIA Nemotron models
+        "NVIDIA NVIDIA Nemotron 3 Super 120B A12B": "nvidia.nemotron-super-3-120b",
+        "NVIDIA Nemotron Nano 3 30B": "nvidia.nemotron-nano-3-30b",
+        "NVIDIA Nemotron Nano 9B v2": "nvidia.nemotron-nano-9b-v2",
+
+        # Kimi K2.5 (multimodal)
+        "Moonshot AI Kimi K2.5": "moonshotai.kimi-k2.5",
+
         # Claude models for comparison - adding with known pricing (per 1M tokens)
         # These are manually added since they may not appear in all regions in pricing API
         # "Claude 3.5 Sonnet": "anthropic.claude-3-5-sonnet-20241022-v2:0",
