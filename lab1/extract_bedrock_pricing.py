@@ -53,9 +53,11 @@ def get_manual_model_mappings():
         "Qwen3 32B (dense)": "qwen.qwen3-32b-v1:0",
 
         # NVIDIA Nemotron models
-        "NVIDIA NVIDIA Nemotron 3 Super 120B A12B": "nvidia.nemotron-super-3-120b",
-        "NVIDIA Nemotron Nano 3 30B": "nvidia.nemotron-nano-3-30b",
-        "NVIDIA Nemotron Nano 9B v2": "nvidia.nemotron-nano-9b-v2",
+        "Nvidia NVIDIA Nemotron 3 Super 120B A12B": "nvidia.nemotron-super-3-120b",
+        "Nvidia Nemotron Nano 3 30B": "nvidia.nemotron-nano-3-30b",
+        "Nvidia NVIDIA Nemotron Nano 9B v2": "nvidia.nemotron-nano-9b-v2",
+        "Nvidia NVIDIA Nemotron Nano 2": "nvidia.nemotron-nano-12b-v2",
+        "Nvidia NVIDIA Nemotron Nano 2 VL": "nvidia.nemotron-nano-12b-v2",
 
         # Kimi K2.5 (multimodal)
         "Moonshot AI Kimi K2.5": "moonshotai.kimi-k2.5",
