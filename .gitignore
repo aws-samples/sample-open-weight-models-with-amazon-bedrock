@@ -2,6 +2,8 @@
 .vscode/
 .kiro/
 .idea/
+.claude/
+CLAUDE.md
 *.swp
 *.swo
 *~
@@ -92,3 +94,6 @@ $RECYCLE.BIN/
 # Development and intermediate files
 */development_files/
 development_files/
+
+# Generated evaluation datasets
+*.jsonl

@@ -1,18 +1,12 @@
-# AWS Toronto Summit 2026 - AIM311 Builder Session
+# Optimize Open Weight Models for Low-Latency, Cost-Effective AI Apps
 
 ## Repo Overview
-This repository contains materials for the AWS Toronto Summit 2026 Bedrock Open Weight Model Builder session, focusing on demonstrating the capabilities and advantages of open-weight models on Amazon Bedrock.
-
-Originally developed for re:Invent 2025 and updated for Toronto Summit (June 3, 2026).
-
-### Session Title
-Optimize open weight models for low-latency, cost-effective AI apps
+This repository contains materials for an AWS Builders Session focusing on demonstrating the capabilities and advantages of open-weight models on Amazon Bedrock.
 
 ### Session Abstract
 Open-weight models deliver exceptional performance while offering customization control. Organizations can process sensitive data locally, deploy models tailored to specific requirements, and scale efficiently at lower latency and cost. However, maximizing these benefits requires strategic decisions—poor choices waste resources and compromise results. This session provides a practical framework for using open-weight models in Amazon Bedrock. Learn to evaluate and select the ideal model for your specific use cases, understand the trade-offs between different models and sizes, and identify deployment patterns that balance cost and latency. We'll demonstrate optimization techniques and architect solutions for real-world workloads, including agentic applications.
 
 ### Session Details
-- **Session ID:** AIM311
 - **Content Level:** L300
 - **Key Messages**
   - **Low latency** across models

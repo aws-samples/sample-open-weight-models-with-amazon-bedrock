@@ -184,13 +184,25 @@ def clean_model_display_name(raw_name):
       'Moonshot AI Kimi K2.5'    -> 'Moonshot AI Kimi K2.5' (no redundancy)
     """
     # Map: if raw_name starts with key, strip key and keep rest
-    provider_strip = {
-        "DeepSeek DeepSeek ": "DeepSeek ",
-        "Nvidia NVIDIA ":    "NVIDIA ",
-        "Nvidia Nemotron ":  "Nemotron ",
-        "Qwen Qwen":         "Qwen",       # "Qwen Qwen3" -> "Qwen3"
-    }
-    for prefix, replacement in provider_strip.items():
+    # Exact prefix -> cleaned name mappings (order matters: longest match first)
+    strip_rules = [
+        ("DeepSeek DeepSeek ",              "DeepSeek "),
+        ("Nvidia NVIDIA Nemotron ",         "Nemotron "),
+        ("Nvidia Nemotron ",                "Nemotron "),
+        ("Qwen Qwen",                       "Qwen"),
+        ("Moonshot AI Kimi ",               "Kimi "),
+        ("OpenAI GPT OSS Safeguard ",        "GPT OSS Safeguard "),
+        ("OpenAI GPT ",                     "GPT "),
+        ("OpenAI gpt-oss-120b",             "GPT OSS 120B"),
+        ("OpenAI gpt-oss-20b",              "GPT OSS 20B"),
+        ("OpenAI gpt-oss",                  "GPT OSS"),
+        ("Meta Llama ",                     "Llama "),
+        ("Mistral Mistral ",                "Mistral "),
+        ("Mistral Mixtral ",                "Mixtral "),
+        ("Google Gemma ",                   "Gemma "),
+        ("Writer Writer ",                  "Writer "),
+    ]
+    for prefix, replacement in strip_rules:
         if raw_name.startswith(prefix):
             return replacement + raw_name[len(prefix):]
     return raw_name
