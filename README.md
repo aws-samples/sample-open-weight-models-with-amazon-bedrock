@@ -1,19 +1,18 @@
 # Optimize Open Weight Models for Low-Latency, Cost-Effective AI Apps
 
-## Repo Overview
-This repository contains materials for an AWS Builders Session focusing on demonstrating the capabilities and advantages of open-weight models on Amazon Bedrock.
+This repository accompanies a hands-on workshop focusing on demonstrating the capabilities and advantages of open-weight models on Amazon Bedrock - first delivered at re:Invent 2025 (Builder Session AIM311).
 
-### Session Abstract
-Open-weight models deliver exceptional performance while offering customization control. Organizations can process sensitive data locally, deploy models tailored to specific requirements, and scale efficiently at lower latency and cost. However, maximizing these benefits requires strategic decisions—poor choices waste resources and compromise results. This session provides a practical framework for using open-weight models in Amazon Bedrock. Learn to evaluate and select the ideal model for your specific use cases, understand the trade-offs between different models and sizes, and identify deployment patterns that balance cost and latency. We'll demonstrate optimization techniques and architect solutions for real-world workloads, including agentic applications.
+## Overview
 
-### Session Details
-- **Content Level:** L300
-- **Key Messages**
-  - **Low latency** across models
-  - **Cost comparison** between different model options
-  - **Accuracy differences** between standard and fine-tuned models
+Open-weight models deliver exceptional performance while offering customization control. Organizations can process sensitive data locally, deploy models tailored to specific requirements, and scale efficiently at lower latency and cost. However, maximizing these benefits requires strategic decisions: Poor choices waste resources and compromise results. This session provides a practical framework for using open-weight models in Amazon Bedrock. Learn to evaluate and select the ideal model for your specific use cases, understand the trade-offs between different models and sizes, and identify deployment patterns that balance cost and latency. We'll demonstrate optimization techniques and architect solutions for real-world workloads, including agentic applications.
+
+Refer to the [workshop instructions](https://catalog.us-east-1.prod.workshops.aws/workshops/121757da-34db-4eb3-b86d-c1bb24e85a14) for guidance on how to follow along in an AWS-hosted event.
 
 ## Pillars for LLM Model Evaluation
+
+To select the right model for a use-case, it's important to evaluate which option performs best from a holistic perspective: Considering factors like speed and price as well as whatever measures of output quality or accuracy apply to your project.
+
+We propose a set of pillars to guide holistic evaluation:
 
 ### 1. Operational Metrics (coverd by Lab 1 & Lab 2)
 - **Cost per token processed**: Economic efficiency of model usage
@@ -34,17 +33,22 @@ Open-weight models deliver exceptional performance while offering customization 
 - **Adaptability**: Flexibility to handle diverse tasks and contexts
 - **Fine-tuning or custom training options**: Customization capabilities
 
-## Repo Setup and Flow
+## Getting Started
 
-### Create Virtual Environment
+For AWS-hosted events, we typically test and run these notebooks in [JupyterLab](https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-jl.html) on [SageMaker AI Studio](https://aws.amazon.com/sagemaker/ai/studio/). However, they may run in other environments too so long as you install the required dependencies and configure your [AWS CLI credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+Your environment will need Python (v3.12+).
+
+If running on a multi-project environment, you may wish to set up a [virtual environment](https://docs.python.org/3/library/venv.html):
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### Install Requirements
+Install the required libraries (from [pyproject.toml](pyproject.toml) into your Python environment:
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
 ### Lab 1: Model Selection & API Comparison
