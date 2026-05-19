@@ -72,7 +72,6 @@ Evaluate quality, latency, and accuracy metrics with focus on tool calling and a
 - [Automatic Model Evaluation](https://github.com/aws-samples/Meta-Llama-on-AWS/blob/main/model-evaluation/Amazon%20Bedrock/Automatic_model_evaluation_v2.ipynb)
 
 
-
 ## Models Covered
 
 ### Lab 1 (Model Selection & API Integration)
@@ -88,5 +87,3 @@ Evaluate quality, latency, and accuracy metrics with focus on tool calling and a
 - **Qwen3 32B** & **GPT OSS 20B** — Automatic Model Evaluation (Lab 2a)
 - **NVIDIA Nemotron Nano 9B v2** & **Mistral 7B Instruct** — LLM-as-a-Judge (Lab 2b)
 - **Mistral Large** — Evaluator model (Lab 2b)
-
-
