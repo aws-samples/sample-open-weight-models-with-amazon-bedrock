@@ -5,8 +5,10 @@ description = "Code samples for a hands-on workshop exploring open weight models
 requires-python = ">=3.11"
 dependencies = [
     "aws-bedrock-token-generator>=1,<2",
-    "boto3>=1.37.0,<2",  # Python SDK for AWS
+    "boto3>=1.43.8,<2",  # Python SDK for AWS, Since Bedrock APO launch
     "crewai>=1.13,<2",
+    "ipython",  # Interactive kernel for using Python in notebooks
+    "ipywidgets", # Interactive widget outputs for notebooks
     "langchain>=1.0.3,<2",
     "langchain-aws>=1,<2",
     "langchain-core>=1.0.3,<2",
@@ -17,8 +19,10 @@ dependencies = [
     "pandas>=2.3",  # Utilities for working with tabular data as "dataframes"
     "Pillow>=10.0.0",  # Image processing utilities
     "rich>=14.0.0",  # Render rich text in the console/terminal
+    "s3fs",  # Access S3 data with file-like methods (we'll use via UPath)
     "sagemaker>=2.245,<3",  # High-level Python SDK for Amazon SageMaker
-    "seaborn>=0.13.2"  # Statistical data visualization built on matplotlib
+    "seaborn>=0.13.2",  # Statistical data visualization built on matplotlib
+    "universal-pathlib"  # Generic file-like IO for both local and S3 files
 ]
 
 # This project is only for dependencies - not building libraries:

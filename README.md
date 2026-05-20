@@ -65,6 +65,12 @@ Evaluate quality, latency, and accuracy metrics with focus on tool calling and a
 - [`lab2/Lab2a_-_Automatic_model_evaluation.ipynb`](lab2/Lab2a_-_Automatic_model_evaluation.ipynb)
 - [`lab2/Lab2b_-_LLM_as_a_judge_evaluation.ipynb`](lab2/Lab2b_-_LLM_as_a_judge_evaluation.ipynb)
 
+### Lab 3: Automatic Prompt Optimization
+Automatically optimize prompt templates to increase the quality of responses between different models - enabling fairer comparison of different models' capabilities without needing to tune prompts manually for each one.
+
+**Files:**
+- [`lab3/Lab3_Prompt_Optimization.ipynb`](lab3/Lab3_Prompt_Optimization.ipynb)
+
 ## Technical Resources
 
 ### Benchmarking & Evaluation

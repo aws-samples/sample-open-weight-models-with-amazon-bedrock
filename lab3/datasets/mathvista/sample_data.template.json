@@ -1,0 +1,327 @@
+{
+  "version": "bedrock-2026-05-14",
+  "templateId": "mathvista-demo",
+  "promptTemplate": "Look at the image carefully and solve the following problem step by step.\n\n{{question}}\n\nShow your reasoning, then provide your final answer on the last line in the format:\nThe answer is <your answer>\n\nFor multiple-choice questions, give the answer text (not just the letter).",
+  "evaluationSamples": [
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Is the number of small yellow metallic choppers that are behind the large cyan thing less than the number of brown metal double buss that are behind the small yellow shiny thing?\nChoices:\n(A) Yes\n(B) No"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_451.png"
+          }
+        }
+      ],
+      "referenceResponse": "Yes"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring a floating-point number with two decimal places and provide the final value, e.g., 1.23, 1.34, 1.45, at the end.\nQuestion: Given $V_s$ = 5V, $R_1$ = 1k\u03a9, $R_2$ = 2.2k\u03a9, $R_3$ = 2.2k\u03a9, $R_4$ = 1.5k\u03a9, and $R_L$ = 4.7k\u03a9. Determine the voltage and current across $R_L$. Answer in unit of V (3 sig.fig.)."
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_791.png"
+          }
+        }
+      ],
+      "referenceResponse": "1.06"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Are there fewer purple rubber objects that are to the left of the red object than tiny matte bicycles?\nChoices:\n(A) Yes\n(B) No"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_351.png"
+          }
+        }
+      ],
+      "referenceResponse": "Yes"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: How many people prefer the most preferred object?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_468.png"
+          }
+        }
+      ],
+      "referenceResponse": "7"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: What time is shown? Answer by typing a time word, not a number. It is twelve (_).\nChoices:\n(A) half\n(B) quarter\n(C) o'clock\n(D) quarter to\n(E) quarter past"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_623.png"
+          }
+        }
+      ],
+      "referenceResponse": "o'clock"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: What time is shown? Answer by typing a time word, not a number. It is (_) past three.\nChoices:\n(A) half\n(B) quarter\n(C) o'clock\n(D) quarter to\n(E) quarter past"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_477.png"
+          }
+        }
+      ],
+      "referenceResponse": "half"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: If two sides of a triangle measure 12 and 7, which of the following cannot be the perimeter of the triangle?\nChoices:\n(A) 29\n(B) 34\n(C) 37\n(D) 38"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_615.png"
+          }
+        }
+      ],
+      "referenceResponse": "38"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Is this nest larger than a fist?\nChoices:\n(A) Yes\n(B) No"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_555.png"
+          }
+        }
+      ],
+      "referenceResponse": "No"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: What is the age gap between these two people in image? (Unit: years)"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_366.png"
+          }
+        }
+      ],
+      "referenceResponse": "2"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Base your answers on the diagram of a food chain below and on your knowledge of science. If the population of snakes increases, the population of frogs will most likely\nChoices:\n(A) decrease\n(B) remain the same\n(C) increase\n(D) None"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_771.png"
+          }
+        }
+      ],
+      "referenceResponse": "decrease"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: What is the value of the smallest bar?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_631.png"
+          }
+        }
+      ],
+      "referenceResponse": "0"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: Which is the next number in the series?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_941.png"
+          }
+        }
+      ],
+      "referenceResponse": "2"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the figure above, l || m. Which of the following must equal 180?\nChoices:\n(A) k + n + r\n(B) k + p + s\n(C) n + p + s\n(D) n + p + t\n(E) r + s + t"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_798.png"
+          }
+        }
+      ],
+      "referenceResponse": "k + p + s"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: What is the value of the largest bar?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_497.png"
+          }
+        }
+      ],
+      "referenceResponse": "9"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: Haley went to the store. She bought 3+9/10 pounds of pumpernickel bread crumbs. How much did she spend? (Unit: $)"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_925.png"
+          }
+        }
+      ],
+      "referenceResponse": "19.5"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the diagram of the food web shown, if the number of ferns decrease, the supply of salmon will most likely?\nChoices:\n(A) decrease\n(B) can't tell\n(C) stay same\n(D) increase"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_370.png"
+          }
+        }
+      ],
+      "referenceResponse": "decrease"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: What percentage of people prefer the least preferred object?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_597.png"
+          }
+        }
+      ],
+      "referenceResponse": "10"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: How many odd functions are in the graph?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_721.png"
+          }
+        }
+      ],
+      "referenceResponse": "4"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the figure above, the ratio of the length of line AB to the length of line AC is 2 : 5. If AC = 25, what is the length of line AB?\nChoices:\n(A) 8\n(B) 10\n(C) 15\n(D) 18\n(E) 20"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_54.png"
+          }
+        }
+      ],
+      "referenceResponse": "10"
+    },
+    {
+      "inputVariables": [
+        {
+          "question": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: How many people prefer the most preferred object?"
+        }
+      ],
+      "inputVariablesMultimodal": [
+        {
+          "image_path": {
+            "type": "image",
+            "s3Asset": "assets/mathvista_427.png"
+          }
+        }
+      ],
+      "referenceResponse": "7"
+    }
+  ]
+}
