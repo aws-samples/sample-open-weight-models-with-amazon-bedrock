@@ -44,14 +44,24 @@ def get_manual_model_mappings():
         "Nova Pro Latency Optimized": "amazon.nova-pro-v1:0:24k",  # Same as regular Nova Pro
         
         # Fix the 6 unmatched models based on search results
-        "DeepSeek DeepSeek V3.1": "deepseek.v3-v1:0",  # Correct DeepSeek V3.1 model ID
+        "DeepSeek DeepSeek V3.2": "deepseek.v3.2",  # DeepSeek V3.2 model ID
         "Meta Llama 3.1 405B": "meta.llama3-1-405b-instruct-v1:0",  # 405B model
         "Meta Llama 3.3 70B Custom": "meta.llama3-3-70b-instruct-v1:0",  # Custom variant
         "Mistral Mistral Large 2407": "mistral.mistral-large-2402-v1:0",  # 2407 maps to 2402
         "Qwen Qwen3 235B A22B 2507": "qwen.qwen3-235b-a22b-2507-v1:0",  # Maps to 32B dense
         "Qwen Qwen3 Coder 480B A35B": "qwen.qwen3-coder-30b-a3b-v1:0",  # Maps to 30B coder
         "Qwen3 32B (dense)": "qwen.qwen3-32b-v1:0",
-        
+
+        # NVIDIA Nemotron models
+        "Nvidia NVIDIA Nemotron 3 Super 120B A12B": "nvidia.nemotron-super-3-120b",
+        "Nvidia Nemotron Nano 3 30B": "nvidia.nemotron-nano-3-30b",
+        "Nvidia NVIDIA Nemotron Nano 9B v2": "nvidia.nemotron-nano-9b-v2",
+        "Nvidia NVIDIA Nemotron Nano 2": "nvidia.nemotron-nano-12b-v2",
+        "Nvidia NVIDIA Nemotron Nano 2 VL": "nvidia.nemotron-nano-12b-v2",
+
+        # Kimi K2.5 (multimodal)
+        "Moonshot AI Kimi K2.5": "moonshotai.kimi-k2.5",
+
         # Claude models for comparison - adding with known pricing (per 1M tokens)
         # These are manually added since they may not appear in all regions in pricing API
         # "Claude 3.5 Sonnet": "anthropic.claude-3-5-sonnet-20241022-v2:0",
@@ -157,6 +167,46 @@ def get_bedrock_model_ids(verbose=False):
     except Exception as e:
         log_info(f"❌ Error fetching Bedrock models: {e}")
         return {}
+
+def clean_model_display_name(raw_name):
+    """Clean up model display names from the pricing API.
+
+    The pricing API constructs names as '{provider} {model}' which often
+    produces redundant provider prefixes. We strip just the leading provider
+    word(s) when the model name already contains the brand.
+
+    Examples:
+      'DeepSeek DeepSeek v3.2'   -> 'DeepSeek v3.2'
+      'Nvidia NVIDIA Nemotron …' -> 'NVIDIA Nemotron …'
+      'Nvidia Nemotron Nano …'   -> 'Nemotron Nano …'
+      'Qwen Qwen3 32B'           -> 'Qwen3 32B'
+      'OpenAI gpt-oss-120b'      -> 'OpenAI gpt-oss-120b'  (no redundancy)
+      'Moonshot AI Kimi K2.5'    -> 'Moonshot AI Kimi K2.5' (no redundancy)
+    """
+    # Map: if raw_name starts with key, strip key and keep rest
+    # Exact prefix -> cleaned name mappings (order matters: longest match first)
+    strip_rules = [
+        ("DeepSeek DeepSeek ",              "DeepSeek "),
+        ("Nvidia NVIDIA Nemotron ",         "Nemotron "),
+        ("Nvidia Nemotron ",                "Nemotron "),
+        ("Qwen Qwen",                       "Qwen"),
+        ("Moonshot AI Kimi ",               "Kimi "),
+        ("OpenAI GPT OSS Safeguard ",        "GPT OSS Safeguard "),
+        ("OpenAI GPT ",                     "GPT "),
+        ("OpenAI gpt-oss-120b",             "GPT OSS 120B"),
+        ("OpenAI gpt-oss-20b",              "GPT OSS 20B"),
+        ("OpenAI gpt-oss",                  "GPT OSS"),
+        ("Meta Llama ",                     "Llama "),
+        ("Mistral Mistral ",                "Mistral "),
+        ("Mistral Mixtral ",                "Mixtral "),
+        ("Google Gemma ",                   "Gemma "),
+        ("Writer Writer ",                  "Writer "),
+    ]
+    for prefix, replacement in strip_rules:
+        if raw_name.startswith(prefix):
+            return replacement + raw_name[len(prefix):]
+    return raw_name
+
 
 def extract_bedrock_model_pricing(verbose=False):
     """Extract detailed pricing for specific Bedrock models
@@ -363,9 +413,11 @@ def extract_bedrock_model_pricing(verbose=False):
                             actual_model_id = bedrock_id
                             break
             
+            display_name = clean_model_display_name(model)
+
             if actual_model_id:
                 BEDROCK_PRICING_USD_PER_1M_TOKENS[actual_model_id] = {
-                    "name": model,
+                    "name": display_name,
                     "input": round(input_per_1m, 2),
                     "output": round(output_per_1m, 2),
                     "region": region
@@ -376,7 +428,7 @@ def extract_bedrock_model_pricing(verbose=False):
                 model_clean = model.replace(' ', '_').lower().replace('__', '_')
                 fabricated_id = f"fabricated.{model_clean}"
                 BEDROCK_PRICING_USD_PER_1M_TOKENS[fabricated_id] = {
-                    "name": f"{model} ⚠️ FABRICATED ID",
+                    "name": f"{display_name} ⚠️ FABRICATED ID",
                     "input": round(input_per_1m, 2),
                     "output": round(output_per_1m, 2),
                     "region": region

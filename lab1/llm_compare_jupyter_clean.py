@@ -78,12 +78,17 @@ def parse_model_input(model_input):
         if 'model_id' in model_input:
             model_input['model_id'] = model_input['model_id'].strip()
         return model_input
-    
+
     # Clean whitespace and tabs from model ID string
     clean_model_id = str(model_input).strip()
-    
-    # Generate friendly name from model ID
-    name = clean_model_id.split('.')[-1].replace('-', ' ').title()
+
+    # Use the name from pricing data if available, otherwise derive from model ID
+    pricing_data = _external_pricing_data or {}
+    pricing_info = find_model_pricing(clean_model_id, pricing_data)
+    if pricing_info and 'name' in pricing_info:
+        name = pricing_info['name']
+    else:
+        name = clean_model_id.split('.', 1)[-1].replace('-', ' ').title()
     return {"name": name, "model_id": clean_model_id}
 
 def get_region_display(llm_call):
@@ -317,14 +322,20 @@ def compare_models_simple(models, prompt, pricing_data=None, timeout_single_llm_
         DataFrame with results for further analysis
     """
     
+    # Set pricing data first so parse_model_input can look up display names
+    if pricing_data:
+        set_pricing_data(pricing_data)
+    else:
+        print("💰 Using estimated pricing (no pricing data provided)")
+
     # Parse model configurations
     model_configs = [parse_model_input(m) for m in models]
-    
+
     print(f"🚀 Comparing {len(model_configs)} models...")
     print(f"⏱️  Each model will timeout after {timeout_single_llm_sec} seconds")
     print(f"📝 Question: {prompt}")
     print("=" * 80)
-    
+
     # Display KPI explanations
     print("📊 KEY PERFORMANCE INDICATORS (KPIs):")
     print("🕐 LATENCY (s):      Total time from request to complete response")
@@ -335,13 +346,6 @@ def compare_models_simple(models, prompt, pricing_data=None, timeout_single_llm_
     print("💰 COST (¢):         Actual cost based on AWS Bedrock pricing")
     print("🌍 REGION FALLBACK:  us-east-1 → us-west-2, plus us./eu./ap. prefixes")
     print("=" * 80)
-    print()
-    
-    # Set pricing data if provided
-    if pricing_data:
-        set_pricing_data(pricing_data)
-    else:
-        print("💰 Using estimated pricing (no pricing data provided)")
     print()
     
     # Create LLM calls and run models sequentially
