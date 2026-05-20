@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import json
+import os
 import re
+import subprocess
 from copy import deepcopy
 from typing import Any, Callable
 
@@ -14,7 +17,7 @@ from botocore.exceptions import ClientError
 from IPython.display import Markdown
 from upath import UPath
 
-
+DATASETS_ABSPATH = UPath(os.path.abspath(os.path.dirname(__file__))) / "datasets"
 DEFAULT_S3_PREFIX = "apo-demo"
 
 bedrock = boto3.client("bedrock")
@@ -33,7 +36,7 @@ def resolve_sample_data_template(
         s3_prefix: Folder prefix in S3 where the contents of lab3/datasets have been uploaded
     """
     
-    with open(f"datasets/{dataset_id}/sample_data.template.json") as f:
+    with (DATASETS_ABSPATH / dataset_id / "sample_data.template.json").open() as f:
         dataset = json.loads(f.read())
     
     for sample in dataset["evaluationSamples"]:
@@ -139,3 +142,55 @@ def render_prompt_diff(parsed_row: dict, heading_md: str | None = None) -> Markd
         f"<details><summary><b>Optimized template</b> ({len(opt)} chars)</summary>\n\n"
         f"```\n{opt}\n```\n</details>"
     )
+
+def pre_run():
+    """Pre-create APO jobs with analogous configuration to the notebook"""
+    import sagemaker
+
+    sm_sess = sagemaker.Session()
+    bucket_name = sm_sess.default_bucket()
+
+    # Subfolders for dataset inputs and result outputs:
+    s3_datasets_prefix = f"{DEFAULT_S3_PREFIX}/pre-run/datasets"
+    s3_results_prefix = f"{DEFAULT_S3_PREFIX}/pre-run/results"
+
+    subprocess.run(
+        [
+            "aws",
+            "s3",
+            "sync",
+            f"{DATASETS_ABSPATH}/",
+            f"s3://{bucket_name}/{s3_datasets_prefix}"
+        ]
+    )
+
+    dataset_id = "mathvista"
+    dataset = resolve_sample_data_template(
+        dataset_id=dataset_id,
+        bucket_name=bucket_name,
+        s3_datasets_prefix=s3_datasets_prefix,
+    )
+    dataset["steeringCriteria"] = ["concise"]
+
+    dataset_s3_uri = f"s3://{bucket_name}/{s3_datasets_prefix}/{dataset_id}/sample_steering.resolved.jsonl"
+    
+    with UPath(dataset_s3_uri).open("w") as f:
+        # Note this is actually a JSON-Lines file - so must be rendered all on one line:
+        f.write(json.dumps(dataset))
+    print(f"Uploaded to {dataset_s3_uri}\n")
+    
+    job_name = f"demo-{dataset_id}-steering-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    output_s3uri = f"s3://{bucket_name}/{s3_results_prefix}/{job_name}/"  # (Must have trailing slash)
+    print(f"Starting job name {job_name} ...")
+    create_resp = bedrock.create_advanced_prompt_optimization_job(
+        jobName=job_name,
+        modelConfigurations=[
+            {"modelId": "moonshotai.kimi-k2.5"},
+            {"modelId": "qwen.qwen3-vl-235b-a22b"},
+            {"modelId": "us.anthropic.claude-sonnet-4-6"},
+        ],
+        inputConfig={"s3Uri": dataset_s3_uri},
+        outputConfig={"s3Uri": output_s3uri},
+    )
+    job_arn = create_resp["jobArn"]
+    print(f"Job ARN: {job_arn}")
