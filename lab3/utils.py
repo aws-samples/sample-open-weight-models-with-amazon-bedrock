@@ -170,7 +170,12 @@ def pre_run():
         bucket_name=bucket_name,
         s3_datasets_prefix=s3_datasets_prefix,
     )
-    dataset["steeringCriteria"] = ["concise"]
+    dataset["steeringCriteria"] = [
+        "State the final answer first on its own line, in the format `Answer: <X>` (a number, an option letter, or short text).",
+        "After the answer line, provide step-by-step mathematical derivations grounded in the image, with each derivation step rendered in LaTeX (`$...$` for inline math, `$$...$$` for display equations).",
+        "Reasoning must reference specific visual elements of the image (axes, labels, shapes, colors, table cells, etc.) where relevant.",
+        "Do not output any prose outside of the answer line and the LaTeX-formatted derivation steps.",
+    ]
 
     dataset_s3_uri = f"s3://{bucket_name}/{s3_datasets_prefix}/{dataset_id}/sample_steering.resolved.jsonl"
     
