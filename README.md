@@ -62,8 +62,8 @@ Compare APIs and open-weight models (NVIDIA Nemotron, GPT OSS, Qwen, DeepSeek, K
 Evaluate quality, latency, and accuracy metrics with focus on tool calling and agentic tasks using automated and LLM-as-a-Judge methodology.
 
 **Files:**
-- [`lab2/Lab2a_-_Automatic_model_evaluation.ipynb`](lab2/Lab2a_-_Automatic_model_evaluation.ipynb)
-- [`lab2/Lab2b_-_LLM_as_a_judge_evaluation.ipynb`](lab2/Lab2b_-_LLM_as_a_judge_evaluation.ipynb)
+- [`lab2/Lab2_Automatic_Evaluation.ipynb`](lab2/Lab2_Automatic_Evaluation.ipynb)
+- [`lab2/Lab2Extension_Classical_Metrics.ipynb`](lab2/Lab2Extension_Classical_Metrics.ipynb)
 
 ### Lab 3: Automatic Prompt Optimization
 Automatically optimize prompt templates to increase the quality of responses between different models - enabling fairer comparison of different models' capabilities without needing to tune prompts manually for each one.
