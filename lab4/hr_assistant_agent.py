@@ -269,7 +269,7 @@ Always use the available tools to answer questions accurately. Do not make up
 policy details, benefit amounts, or pay information — look them up.
 Be concise, professional, and friendly."""
 
-_MODEL = BedrockModel(model_id="us.amazon.nova-lite-v1:0")
+_MODEL = BedrockModel(model_id="nvidia.nemotron-nano-3-30b")
 _TOOLS = [
     get_pto_balance,
     submit_pto_request,
