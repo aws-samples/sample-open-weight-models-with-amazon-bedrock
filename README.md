@@ -71,11 +71,18 @@ Automatically optimize prompt templates to increase the quality of responses bet
 **Files:**
 - [`lab3/Lab3_Prompt_Optimization.ipynb`](lab3/Lab3_Prompt_Optimization.ipynb)
 
+### Lab 4: Agent Optimization with AgentCore
+Observe, evaluate, and optimize your AI agents deployed on [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/) to deliver high-quality results even when using cost-optimized models.
+
+**Files:**
+- [`lab4/Lab4_AgentCore_Optimization.ipynb`](lab4/Lab4_AgentCore_Optimization.ipynb)
+
 ## Technical Resources
 
 ### Benchmarking & Evaluation
 - [Model Latency Benchmarking](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/model-latency-benchmarking)
 - [Automatic Model Evaluation](https://github.com/aws-samples/Meta-Llama-on-AWS/blob/main/model-evaluation/Amazon%20Bedrock/Automatic_model_evaluation_v2.ipynb)
+- Amazon Bedrock AgentCore [introductory workshop](https://catalog.workshops.aws/agentcore-getting-started), [developer guide](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html), and [code samples](https://github.com/awslabs/agentcore-samples)
 
 
 ## Models Covered

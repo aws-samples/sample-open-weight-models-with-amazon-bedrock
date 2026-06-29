@@ -26,121 +26,10 @@ import sys
 import time
 import zipfile
 from pathlib import Path
+from typing import Literal, Optional
 
 import boto3
 
-# ---------------------------------------------------------------------------
-# Parse arguments
-# ---------------------------------------------------------------------------
-
-parser = argparse.ArgumentParser(description="Deploy HR Assistant to AgentCore Runtime")
-parser.add_argument("--name", required=True, help="Runtime name (alphanumeric)")
-parser.add_argument("--region", default=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
-parser.add_argument(
-    "--version",
-    default="v1",
-    choices=["v1", "v2"],
-    help="Agent version: v1=baseline, v2=enhanced (extra tool + improved prompt)",
-)
-args = parser.parse_args()
-
-RUNTIME_NAME = args.name
-REGION = args.region
-VERSION = args.version
-
-# ---------------------------------------------------------------------------
-# AWS clients
-# ---------------------------------------------------------------------------
-
-sts = boto3.client("sts", region_name=REGION)
-ACCOUNT_ID = sts.get_caller_identity()["Account"]
-
-iam = boto3.client("iam", region_name=REGION)
-s3 = boto3.client("s3", region_name=REGION)
-ctrl = boto3.client("bedrock-agentcore-control", region_name=REGION)
-
-ROLE_NAME = f"{RUNTIME_NAME}Role"
-S3_BUCKET = f"bedrock-agentcore-code-{ACCOUNT_ID}-{REGION}"
-S3_KEY = f"{RUNTIME_NAME}/deployment_package.zip"
-BUILD_DIR = Path(f"/tmp/{RUNTIME_NAME}_build")  # nosec B108
-STATE_FILE = Path(f"agent_state_{RUNTIME_NAME}.json")
-
-print(f"Deploying {RUNTIME_NAME} (version={VERSION}) to {REGION} (account={ACCOUNT_ID})")
-
-# ---------------------------------------------------------------------------
-# IAM role
-# ---------------------------------------------------------------------------
-
-TRUST_POLICY = json.dumps(
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {"Service": "bedrock-agentcore.amazonaws.com"},
-                "Action": "sts:AssumeRole",
-                "Condition": {
-                    "StringEquals": {
-                        "aws:SourceAccount": ACCOUNT_ID,
-                    },
-                    "ArnLike": {
-                        "aws:SourceArn": f"arn:aws:bedrock-agentcore:*:{ACCOUNT_ID}:*",
-                    },
-                },
-            }
-        ],
-    }
-)
-
-PERMISSIONS_POLICY = json.dumps(
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "bedrock-agentcore:*",
-                    "bedrock:InvokeModel",
-                    "bedrock:InvokeModelWithResponseStream",
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents",
-                    "logs:DescribeLogGroups",
-                    "logs:DescribeIndexPolicies",
-                    "logs:PutIndexPolicy",
-                    "logs:FilterLogEvents",
-                    "logs:GetLogEvents",
-                    "logs:StartQuery",
-                    "logs:GetQueryResults",
-                    "logs:StopQuery",
-                    "cloudwatch:*",
-                    "xray:PutTraceSegments",
-                    "xray:PutTelemetryRecords",
-                    "sts:AssumeRole",
-                    "s3:GetObject",
-                    "s3:ListBucket",
-                ],
-                "Resource": "*",
-            }
-        ],
-    }
-)
-
-try:
-    resp = iam.create_role(RoleName=ROLE_NAME, AssumeRolePolicyDocument=TRUST_POLICY)
-    ROLE_ARN = resp["Role"]["Arn"]
-    print(f"Created IAM role: {ROLE_ARN}")
-except iam.exceptions.EntityAlreadyExistsException:
-    ROLE_ARN = iam.get_role(RoleName=ROLE_NAME)["Role"]["Arn"]
-    print(f"IAM role exists: {ROLE_ARN}")
-
-iam.put_role_policy(
-    RoleName=ROLE_NAME,
-    PolicyName=f"{RUNTIME_NAME}Policy",
-    PolicyDocument=PERMISSIONS_POLICY,
-)
-print("IAM policy attached. Waiting 10s for propagation...")
-time.sleep(10)
 
 # ---------------------------------------------------------------------------
 # Agent code
@@ -255,126 +144,303 @@ def build_v2_code() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Build deployment package
+# Utility Functions
 # ---------------------------------------------------------------------------
 
-if BUILD_DIR.exists():
-    shutil.rmtree(BUILD_DIR)
-PKG_DIR = BUILD_DIR / "pkg"
-PKG_DIR.mkdir(parents=True)
+def setup_execution_role(
+    role_name: str,
+    boto_session,
+    account_id: Optional[str] = None,
+) -> str:
+    """Set up an AgentCore Execution Role with the required permissions to run the agent
 
-print(f"Installing dependencies for ARM64 into {PKG_DIR}...")
-subprocess.run(
-    [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "strands-agents[otel]",
-        "bedrock-agentcore",
-        "aws-opentelemetry-distro",
-        "-t",
-        str(PKG_DIR),
-        "--platform",
-        "manylinux2014_aarch64",
-        "--only-binary=:all:",
-        "--python-version",
-        "3.13",
-        "--quiet",
-    ],
-    check=True,
-)
+    Note that if the specified role already exists this function just returns the ARN as-is, and
+    does *not* alter its permissions.
 
-# Write the agent code to main.py
-agent_code = build_v2_code() if VERSION == "v2" else build_v1_code()
-(PKG_DIR / "main.py").write_text(agent_code)
-print(f"Agent code ({VERSION}) written to {PKG_DIR}/main.py")
+    Args:
+        role_name: Name of the IAM role to create
+        boto_session: A boto3.Session to connect to AWS services in the target Region.
 
-# Zip the package
-ZIP_PATH = BUILD_DIR / "deployment_package.zip"
-with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
-    for root, _, files in os.walk(PKG_DIR):
-        for f in files:
-            if f.endswith(".pyc") or "__pycache__" in root:
-                continue
-            full = Path(root) / f
-            zf.write(full, full.relative_to(PKG_DIR))
+    Returns:
+        arn: ARN of the IAM role
+    """
+    iam = boto_session.client("iam")
+    account_id = account_id or boto_session.client("sts").get_caller_identity()["Account"]
 
-size_mb = ZIP_PATH.stat().st_size / (1024 * 1024)
-print(f"Package built: {ZIP_PATH} ({size_mb:.1f} MB)")
-
-# ---------------------------------------------------------------------------
-# Upload to S3
-# ---------------------------------------------------------------------------
-
-try:
-    if REGION == "us-east-1":
-        s3.create_bucket(Bucket=S3_BUCKET)
-    else:
-        s3.create_bucket(
-            Bucket=S3_BUCKET,
-            CreateBucketConfiguration={"LocationConstraint": REGION},
-        )
-    print(f"Created S3 bucket: {S3_BUCKET}")
-except (s3.exceptions.BucketAlreadyOwnedByYou, s3.exceptions.BucketAlreadyExists):
-    print(f"S3 bucket exists: {S3_BUCKET}")
-
-s3.upload_file(str(ZIP_PATH), S3_BUCKET, S3_KEY)
-print(f"Uploaded to s3://{S3_BUCKET}/{S3_KEY}")
-
-# ---------------------------------------------------------------------------
-# Create AgentCore Runtime
-# ---------------------------------------------------------------------------
-
-resp = ctrl.create_agent_runtime(
-    agentRuntimeName=RUNTIME_NAME,
-    agentRuntimeArtifact={
-        "codeConfiguration": {
-            "code": {"s3": {"bucket": S3_BUCKET, "prefix": S3_KEY}},
-            "runtime": "PYTHON_3_13",
-            "entryPoint": ["opentelemetry-instrument", "main.py"],
+    trust_policy = json.dumps(
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "bedrock-agentcore.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:SourceAccount": account_id,
+                        },
+                        "ArnLike": {
+                            "aws:SourceArn": f"arn:aws:bedrock-agentcore:*:{account_id}:*",
+                        },
+                    },
+                }
+            ],
         }
-    },
-    networkConfiguration={"networkMode": "PUBLIC"},
-    roleArn=ROLE_ARN,
-)
-RUNTIME_ID = resp["agentRuntimeId"]
-print(f"Runtime created: {RUNTIME_ID}. Polling for READY/ACTIVE...")
+    )
 
-for i in range(90):
-    detail = ctrl.get_agent_runtime(agentRuntimeId=RUNTIME_ID)
-    status = detail.get("status", "UNKNOWN")
-    print(f"  Poll {i + 1}: {status}")
-    if status in ("ACTIVE", "READY"):
-        RUNTIME_ARN = detail.get("agentRuntimeArn")
-        break
-    if "FAILED" in status:
-        raise RuntimeError(f"Runtime failed: {detail.get('failureReason')}")
-    time.sleep(10)
-else:
-    raise RuntimeError("Runtime did not become ready within 15 minutes")
+    permissions_policy = json.dumps(
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "bedrock-agentcore:*",
+                        "bedrock:InvokeModel",
+                        "bedrock:InvokeModelWithResponseStream",
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents",
+                        "logs:DescribeLogGroups",
+                        "logs:DescribeIndexPolicies",
+                        "logs:PutIndexPolicy",
+                        "logs:FilterLogEvents",
+                        "logs:GetLogEvents",
+                        "logs:StartQuery",
+                        "logs:GetQueryResults",
+                        "logs:StopQuery",
+                        "cloudwatch:*",
+                        "xray:PutTraceSegments",
+                        "xray:PutTelemetryRecords",
+                        "sts:AssumeRole",
+                        "s3:GetObject",
+                        "s3:ListBucket",
+                    ],
+                    "Resource": "*",
+                }
+            ],
+        }
+    )
 
-LOG_GROUP = f"/aws/bedrock-agentcore/runtimes/{RUNTIME_ID}-DEFAULT"
-SERVICE_NAME = f"{RUNTIME_NAME}.DEFAULT"
+    try:
+        resp = iam.create_role(RoleName=role_name, AssumeRolePolicyDocument=trust_policy)
+        role_arn = resp["Role"]["Arn"]
+        print(f"Created IAM role: {role_arn}")
+    except iam.exceptions.EntityAlreadyExistsException:
+        role_arn = iam.get_role(RoleName=role_name)["Role"]["Arn"]
+        print(f"IAM role exists: {role_arn}")
+
+    iam.put_role_policy(
+        RoleName=role_name,
+        PolicyName="AgentCoreRuntimePolicy",
+        PolicyDocument=permissions_policy,
+    )
+    print("IAM policy attached. Waiting 30s for propagation...")
+    time.sleep(30)
+    return role_arn
+
+
+def build_deployment_package(
+    agent_code: str,
+    boto_session,
+    build_dir: Path,
+    s3_bucket: str,
+    s3_key: str,
+) -> str:
+    """Build a deployment code zip for the agent and upload it to Amazon S3
+
+    Args:
+        agent_code: The inline Python code defining the agent (which will become the contents of
+            a single .py file)
+        boto_session: A boto3.Session in the target AWS Region where you want to deploy
+        build_dir: A local temporary folder where deployment assets will be staged
+        s3_bucket: S3 Bucket to create or use to host the deployment bundle
+        s3_key: Object path+name in the target bucket to upload the bundle to.
+
+    Returns:
+        s3_uri: s3:// URI where the code zip bundle has been uploaded
+    """
+
+    region = boto_session.region_name
+    s3 = boto_session.client("s3")
+
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
+    pkg_dir = build_dir / "pkg"
+    pkg_dir.mkdir(parents=True)
+
+    print(f"Installing dependencies for ARM64 into {pkg_dir}...")
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "strands-agents[otel]",
+            "bedrock-agentcore",
+            "aws-opentelemetry-distro",
+            "-t",
+            str(pkg_dir),
+            "--platform",
+            "manylinux2014_aarch64",
+            "--only-binary=:all:",
+            "--python-version",
+            "3.13",
+            "--quiet",
+        ],
+        check=True,
+    )
+
+    # Write the agent code to main.py
+    (pkg_dir / "main.py").write_text(agent_code)
+    print(f"Agent code written to {pkg_dir}/main.py")
+
+    # Zip the package
+    zip_path = build_dir / "deployment_package.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, _, files in os.walk(pkg_dir):
+            for f in files:
+                if f.endswith(".pyc") or "__pycache__" in root:
+                    continue
+                full = Path(root) / f
+                zf.write(full, full.relative_to(pkg_dir))
+
+    size_mb = zip_path.stat().st_size / (1024 * 1024)
+    print(f"Package built: {zip_path} ({size_mb:.1f} MB)")
+
+    # Upload to S3
+    try:
+        if region == "us-east-1":
+            s3.create_bucket(Bucket=s3_bucket)
+        else:
+            s3.create_bucket(
+                Bucket=s3_bucket,
+                CreateBucketConfiguration={"LocationConstraint": region},
+            )
+        print(f"Created S3 bucket: {s3_bucket}")
+    except (s3.exceptions.BucketAlreadyOwnedByYou, s3.exceptions.BucketAlreadyExists):
+        print(f"S3 bucket exists: {s3_bucket}")
+
+    s3.upload_file(str(zip_path), s3_bucket, s3_key)
+    s3_uri = f"s3://{s3_bucket}/{s3_key}"
+    print(f"Uploaded to {s3_uri}")
+    return s3_uri
+
 
 # ---------------------------------------------------------------------------
-# Save state
+# CLI
 # ---------------------------------------------------------------------------
 
-state = {
-    "runtime_name": RUNTIME_NAME,
-    "runtime_id": RUNTIME_ID,
-    "runtime_arn": RUNTIME_ARN,
-    "log_group": LOG_GROUP,
-    "service_name": SERVICE_NAME,
-    "role_arn": ROLE_ARN,
-    "role_name": ROLE_NAME,
-    "s3_bucket": S3_BUCKET,
-    "s3_key": S3_KEY,
-    "region": REGION,
-    "version": VERSION,
-    "account_id": ACCOUNT_ID,
-}
-STATE_FILE.write_text(json.dumps(state, indent=2))
-print(f"\nState saved to {STATE_FILE}")
-print(json.dumps(state, indent=2))
+def parse_cli_args():
+    """Parse arguments when using this script via the CLI"""
+    parser = argparse.ArgumentParser(description="Deploy HR Assistant to AgentCore Runtime")
+    parser.add_argument("--name", required=True, help="Runtime name (alphanumeric)")
+    parser.add_argument("--region", default=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+    parser.add_argument(
+        "--version",
+        default="v1",
+        choices=["v1", "v2"],
+        help="Agent version: v1=baseline, v2=enhanced (extra tool + improved prompt)",
+    )
+    return parser.parse_args()
+
+
+def main(name: str, region: Optional[str] = None, version: Literal["v1", "v2"] = "v1") -> Path:
+    """Build and deploy the agent
+
+    Args:
+        name: Unique name of the AgentCore Runtime to deploy
+        region: AWS Region to deploy in
+        version: Code version to deploy - 'v1' or 'v2'
+
+    Returns:
+        state_file_path: Path to a local JSON file where created agent state is stored
+    """
+
+    if version not in ("v1", "v2"):
+        raise ValueError(f"'version' parameter must be 'v1' or 'v2'. Got: '{version}'")
+
+    boto_session = boto3.Session(region_name=region) if region else boto3.Session()
+    if not region:
+        region = boto_session.region_name
+    agentcore_ctrl = boto_session.client("bedrock-agentcore-control")
+
+    account_id = boto_session.client("sts").get_caller_identity()["Account"]
+    role_name = f"BedrockAgentCore-{name}"
+    s3_bucket = f"bedrock-agentcore-code-{account_id}-{region}"
+    s3_key = f"{name}/deployment_package.zip"
+    build_dir = Path(f"/tmp/{name}_build")  # nosec B108
+    state_file = Path(f"agent_state_{name}.json")
+
+    print(f"Deploying {name} (version={version}) to {region} (account={account_id})")
+
+    # Build and stage the code:
+    agent_code = build_v2_code() if version == "v2" else build_v1_code()
+    build_deployment_package(
+        agent_code=agent_code,
+        boto_session=boto_session,
+        build_dir=build_dir,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    # Set up IAM:
+    role_arn = setup_execution_role(
+        role_name=role_name, boto_session=boto_session, account_id=account_id
+    )
+    # Create the runtime:
+    resp = agentcore_ctrl.create_agent_runtime(
+        agentRuntimeName=name,
+        agentRuntimeArtifact={
+            "codeConfiguration": {
+                "code": {"s3": {"bucket": s3_bucket, "prefix": s3_key}},
+                "runtime": "PYTHON_3_13",
+                "entryPoint": ["opentelemetry-instrument", "main.py"],
+            }
+        },
+        networkConfiguration={"networkMode": "PUBLIC"},
+        roleArn=role_arn,
+    )
+    runtime_arn = resp["agentRuntimeArn"]
+    runtime_id = resp["agentRuntimeId"]
+    print(f"Runtime created: {runtime_id}")
+
+    # Save the state
+    state = {
+        "account_id": account_id,
+        "log_group": f"/aws/bedrock-agentcore/runtimes/{runtime_id}-DEFAULT",
+        "runtime_name": name,
+        "runtime_id": runtime_id,
+        "runtime_arn": runtime_arn,
+        "region": region,
+        "role_arn": role_arn,
+        "role_name": role_name,
+        "s3_bucket": s3_bucket,
+        "s3_key": s3_key,
+        "service_name": f"{name}.DEFAULT",
+        "version": version,
+    }
+    state_file.write_text(json.dumps(state, indent=2))
+    print(f"\nState saved to {state_file}")
+
+    print("Polling for runtime to become ACTIVE...")
+    for i in range(90):
+        detail = agentcore_ctrl.get_agent_runtime(agentRuntimeId=runtime_id)
+        status = detail.get("status", "UNKNOWN")
+        print(f"  Poll {i + 1}: {status}")
+        if status in ("ACTIVE", "READY"):
+            runtime_arn = detail.get("agentRuntimeArn")
+            break
+        if "FAILED" in status:
+            raise RuntimeError(f"Runtime failed: {detail.get('failureReason')}")
+        time.sleep(10)
+    else:
+        raise RuntimeError("Runtime did not become ready within 15 minutes")
+
+    print("Runtime ready")
+    print(json.dumps(state, indent=2))
+    return state_file
+
+
+if __name__ == "__main__":
+    args = parse_cli_args()
+    main(**args)
