@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Enable Transaction Search for spans in Amazon CloudWatch
+
+Parameters:
+  IndexingPercentage:
+    Type: Number
+    Default: 100
+    MinValue: 0
+    MaxValue: 100
+    Description: Percentage of traces to index for Transaction Search, from 0 to 100
+
+Resources:
+  LogsResourcePolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: TransactionSearchAccessPolicy
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "TransactionSearchXRayAccess",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "xray.amazonaws.com"
+              },
+              "Action": "logs:PutLogEvents",
+              "Resource": [
+                "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws/spans:*",
+                "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/application-signals/data:*"
+              ],
+              "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": "arn:${AWS::Partition}:xray:${AWS::Region}:${AWS::AccountId}:*"
+                },
+                "StringEquals": {
+                  "aws:SourceAccount": "${AWS::AccountId}"
+                }
+              }
+            }
+          ]
+        }
+
+  XRayTransactionSearchConfig:
+    Type: AWS::XRay::TransactionSearchConfig
+    DependsOn: LogsResourcePolicy
+    Properties:
+      IndexingPercentage: !Ref IndexingPercentage
