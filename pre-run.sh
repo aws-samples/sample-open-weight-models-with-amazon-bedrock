@@ -4,7 +4,16 @@
 
 set -eux pipefail
 
-pip install -e .
+if command -v uv &> /dev/null; then
+  uv venv --allow-existing
+  uv sync
+  source .venv/bin/activate
+elif command -v pip &> /dev/null; then
+  pip install -e .
+else
+  echo "Error: neither uv nor pip found" >&2
+  exit 1
+fi
 
 cd lab3
 python -c "import utils; utils.pre_run()"
