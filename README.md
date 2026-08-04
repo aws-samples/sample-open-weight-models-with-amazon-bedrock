@@ -35,15 +35,24 @@ We propose a set of pillars to guide holistic evaluation:
 
 ## Getting Started
 
-For AWS-hosted events, we typically test and run these notebooks in [JupyterLab](https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-jl.html) on [SageMaker AI Studio](https://aws.amazon.com/sagemaker/ai/studio/). However, they may run in other environments too so long as you install the required dependencies and configure your [AWS CLI credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
-
 Your environment will need Python (v3.12+).
+
+For AWS-hosted events, we typically test and run these notebooks in a Cloud-hosted [VS Code Server](https://github.com/coder/code-server) environment in which the required libraries will already have been installed for you via [uv](https://docs.astral.sh/uv/), to a virtual environment in the `.venv` folder.
+
+If you need to re-install or update the dependencies for some reason, you can run:
+
+```sh
+uv venv --allow-existing
+uv sync
+```
+
+These notebooks can also be run in other environments too, so long as you install the required dependencies and configure your [AWS CLI credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 
 If running on a multi-project environment, you may wish to set up a [virtual environment](https://docs.python.org/3/library/venv.html):
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 Install the required libraries (from [pyproject.toml](pyproject.toml) into your Python environment:

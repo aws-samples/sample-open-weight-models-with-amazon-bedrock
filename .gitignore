@@ -10,6 +10,7 @@ CLAUDE.md
 
 # Python virtual environment
 venv/
+.venv/
 env/
 .env
 
