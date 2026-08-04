@@ -25,7 +25,7 @@ We propose a set of pillars to guide holistic evaluation:
 - **Ecosystem tools**: Supporting libraries, frameworks, and utilities
 - **Multimodality**: Support for text, images, audio, and other data types
 
-### 3. Performance & Quality (covered by Lab 2)
+### 3. Performance & Quality (covered by Labs 2, 3, 4)
 - **Reasoning ability**: Model's capacity for logical thinking and problem-solving
 - **Accuracy**: Correctness of responses and factual information
 - **Creativity**: Ability to generate novel and innovative content

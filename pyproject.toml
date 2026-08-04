@@ -19,13 +19,14 @@ dependencies = [
     "openai>=2.6,<3",  # OpenAI Python SDK (for calling OpenAI-compatible APIs on Bedrock)
     "pandas>=2.3",  # Utilities for working with tabular data as "dataframes"
     "Pillow>=10.0.0",  # Image processing utilities
+    "pip>=26.2",  # For cross-platform installs in lab 4
     "requests>=2.34.2",  # Making raw HTTP(S) API requests
     "rich>=14.0.0",  # Render rich text in the console/terminal
     "s3fs",  # Access S3 data with file-like methods (we'll use via UPath)
     "sagemaker>=2.245,<3",  # High-level Python SDK for Amazon SageMaker
     "seaborn>=0.13.2",  # Statistical data visualization built on matplotlib
-    "strands-agents[otel]>=1.45.0",  # For local agent in lab 4 (with observability add-on)
-    "universal-pathlib"  # Generic file-like IO for both local and S3 files
+    "strands-agents[otel]>=1.45.0",  # For local agent in lab 4 (with observability add-on)  # Generic file-like IO for both local and S3 files
+    "universal-pathlib",
 ]
 
 # This project is only for dependencies - not building libraries:
