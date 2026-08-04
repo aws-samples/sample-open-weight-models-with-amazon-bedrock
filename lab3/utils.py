@@ -8,7 +8,7 @@ import os
 import re
 import subprocess
 from copy import deepcopy
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 # External Dependencies:
 import boto3
@@ -143,12 +143,32 @@ def render_prompt_diff(parsed_row: dict, heading_md: str | None = None) -> Markd
         f"```\n{opt}\n```\n</details>"
     )
 
-def pre_run():
-    """Pre-create APO jobs with analogous configuration to the notebook"""
+def pre_run(idempotent: bool = True):
+    """Pre-create APO jobs with analogous configuration to the notebook.
+
+    Args:
+        idempotent: If True (default), skip job creation when a matching job is
+            already completed or in progress. Set to False to always create a new job.
+    """
     import sagemaker
 
     sm_sess = sagemaker.Session()
     bucket_name = sm_sess.default_bucket()
+
+    dataset_id = "mathvista"
+    job_name_prefix = f"demo-{dataset_id}-steering"
+
+    if idempotent:
+        try:
+            existing_arn = find_apo_job(job_name=re.compile(rf"^{re.escape(job_name_prefix)}-"))
+            existing = bedrock.get_advanced_prompt_optimization_job(jobIdentifier=existing_arn)
+            status = existing["jobStatus"]
+            if status in ("Completed", "InProgress"):
+                print(f"Lab 3: Existing APO job is {status} ({existing_arn}), skipping.")
+                return
+            print(f"Lab 3: Most recent APO job has status {status}, creating a new one.")
+        except StopIteration:
+            print("Lab 3: No existing APO job found, creating one.")
 
     # Subfolders for dataset inputs and result outputs:
     s3_datasets_prefix = f"{DEFAULT_S3_PREFIX}/pre-run/datasets"
@@ -164,7 +184,6 @@ def pre_run():
         ]
     )
 
-    dataset_id = "mathvista"
     dataset = resolve_sample_data_template(
         dataset_id=dataset_id,
         bucket_name=bucket_name,
@@ -178,14 +197,14 @@ def pre_run():
     ]
 
     dataset_s3_uri = f"s3://{bucket_name}/{s3_datasets_prefix}/{dataset_id}/sample_steering.resolved.jsonl"
-    
+
     with UPath(dataset_s3_uri).open("w") as f:
         # Note this is actually a JSON-Lines file - so must be rendered all on one line:
         f.write(json.dumps(dataset))
     print(f"Uploaded to {dataset_s3_uri}\n")
-    
-    job_name = f"demo-{dataset_id}-steering-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-    output_s3uri = f"s3://{bucket_name}/{s3_results_prefix}/{job_name}/"  # (Must have trailing slash)
+
+    job_name = f"{job_name_prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    output_s3uri = f"s3://{bucket_name}/{s3_results_prefix}/{job_name}/"
     print(f"Starting job name {job_name} ...")
     create_resp = bedrock.create_advanced_prompt_optimization_job(
         jobName=job_name,
