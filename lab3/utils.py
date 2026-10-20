@@ -209,7 +209,7 @@ def pre_run(idempotent: bool = True):
     create_resp = bedrock.create_advanced_prompt_optimization_job(
         jobName=job_name,
         modelConfigurations=[
-            {"modelId": "moonshotai.kimi-k2.5"},
+            {"modelId": "us.moonshotai.kimi-k3"},
             {"modelId": "qwen.qwen3-vl-235b-a22b"},
             {"modelId": "us.anthropic.claude-sonnet-4-6"},
         ],

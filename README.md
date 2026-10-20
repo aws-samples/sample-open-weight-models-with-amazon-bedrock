@@ -61,7 +61,7 @@ pip install .
 ```
 
 ### Lab 1: Model Selection & API Comparison
-Compare APIs and open-weight models (NVIDIA Nemotron, GPT OSS, Qwen, DeepSeek, Kimi K2.5) to showcase Amazon Bedrock's capabilities.
+Compare APIs and open-weight models (NVIDIA Nemotron, GPT OSS, Qwen, DeepSeek, Kimi K3) to showcase Amazon Bedrock's capabilities.
 
 **Files:**
 - [`lab1/Lab1a_-_Model_Selection_Framework.ipynb`](lab1/Lab1a_-_Model_Selection_Framework.ipynb)
@@ -99,13 +99,19 @@ Observe, evaluate, and optimize your AI agents deployed on [Amazon Bedrock Agent
 ### Lab 1 (Model Selection & API Integration)
 - **NVIDIA Nemotron 3 Super** (120B MoE) — Complex reasoning and agentic workflows
 - **NVIDIA Nemotron Nano 30B** — Cost-effective general-purpose
-- **Kimi K2.5** (Moonshot AI) — Multimodal (text + vision)
+- **Kimi K3** (Moonshot AI) — Multimodal (text + vision), 1M context
 - **GPT OSS 120B / 20B** (OpenAI) — Reasoning and cost-effective tiers
 - **Qwen3 235B MoE / 32B** — Reasoning with thinking mode / enterprise
 - **DeepSeek V3.2** — Cost-optimized high-volume
-- **Qwen3 Coder 480B / 30B** (bonus) — Code generation
+- **Qwen3 Next 80B A3B** (bonus) — Budget code generation
 
 ### Lab 2 (Evaluation)
 - **Qwen3 32B** & **GPT OSS 20B** — Automatic Model Evaluation (Lab 2a)
-- **NVIDIA Nemotron Nano 9B v2** & **Mistral 7B Instruct** — LLM-as-a-Judge (Lab 2b)
+- **NVIDIA Nemotron Nano 3 30B** & **Ministral 3 8B** — LLM-as-a-Judge (Lab 2b)
 - **Mistral Large** — Evaluator model (Lab 2b)
+
+### Lab 3 (Prompt Optimization)
+- **Kimi K3** (Moonshot AI), **Qwen3 VL 235B**, & **Anthropic Claude Sonnet 4.6** — Multimodal prompt optimization targets
+
+### Lab 4 (AgentCore Optimization)
+- **NVIDIA Nemotron Nano 3 30B** — HR Assistant agent model
