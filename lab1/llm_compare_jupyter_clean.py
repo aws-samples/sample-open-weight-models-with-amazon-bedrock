@@ -13,6 +13,9 @@ import time
 # Global pricing data
 _external_pricing_data = None
 
+# Always-reasoning models that reject sampling parameters like temperature
+MODELS_WITHOUT_SAMPLING_PARAMS = ["moonshotai.kimi-k3"]
+
 class LLMCall:
     """LLM Call class for tracking model execution state"""
     def __init__(self, name, model_id):
@@ -118,11 +121,15 @@ def calculate_metrics(llm_call):
 
 def _bedrock_call_with_timeout(client, model_id, prompt, timeout_single_llm_sec=30):
     """Execute Bedrock call with timeout - processes entire stream"""
+    inference_config = {"maxTokens": 2048}
+    if not any(m in model_id for m in MODELS_WITHOUT_SAMPLING_PARAMS):
+        inference_config["temperature"] = 0.7
+
     start_time = time.time()
     response = client.converse_stream(
         modelId=model_id,
         messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": 2048, "temperature": 0.7}
+        inferenceConfig=inference_config
     )
     
     # Process the entire stream within this function so timeout applies to everything
