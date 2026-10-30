@@ -38,8 +38,8 @@ DEFAULT_S3_PREFIX = "bedrock-evaluation-demo/pre-run"
 
 # --- Main notebook: LLM-as-a-judge (see Lab2_Automatic_Evaluation.ipynb) ---
 LLM_JUDGE_GENERATOR_MODELS = [
-    "nvidia.nemotron-nano-9b-v2",
-    "mistral.mistral-7b-instruct-v0:2",
+    "nvidia.nemotron-nano-3-30b",
+    "mistral.ministral-3-8b-instruct",
 ]
 LLM_JUDGE_EVALUATOR_MODEL = "mistral.mistral-large-2402-v1:0"
 # The full range of built-in LLM-as-judge metrics:

@@ -36,31 +36,23 @@ def get_manual_model_mappings():
     """Manual mappings for models that don't match automatically"""
     return {
         # Based on AWS documentation search results
-        "Meta Llama 3.1 70B Latency Optimized": "meta.llama3-1-70b-instruct-v1:0",  # Latency optimized variant
-        "Mistral Mixtral 8x7B": "mistral.mixtral-8x7b-instruct-v0:1",
         "Mistral Pixtral Large 25.02": "mistral.pixtral-large-2502-v1:0", 
-        "Qwen Qwen3 Coder 30B A3B": "qwen.qwen3-coder-30b-a3b-v1:0",
         # Additional common variations
         "Nova Pro Latency Optimized": "amazon.nova-pro-v1:0:24k",  # Same as regular Nova Pro
         
         # Fix the 6 unmatched models based on search results
         "DeepSeek DeepSeek V3.2": "deepseek.v3.2",  # DeepSeek V3.2 model ID
         "Meta Llama 3.1 405B": "meta.llama3-1-405b-instruct-v1:0",  # 405B model
-        "Meta Llama 3.3 70B Custom": "meta.llama3-3-70b-instruct-v1:0",  # Custom variant
         "Mistral Mistral Large 2407": "mistral.mistral-large-2402-v1:0",  # 2407 maps to 2402
         "Qwen Qwen3 235B A22B 2507": "qwen.qwen3-235b-a22b-2507-v1:0",  # Maps to 32B dense
-        "Qwen Qwen3 Coder 480B A35B": "qwen.qwen3-coder-30b-a3b-v1:0",  # Maps to 30B coder
         "Qwen3 32B (dense)": "qwen.qwen3-32b-v1:0",
 
         # NVIDIA Nemotron models
         "Nvidia NVIDIA Nemotron 3 Super 120B A12B": "nvidia.nemotron-super-3-120b",
         "Nvidia Nemotron Nano 3 30B": "nvidia.nemotron-nano-3-30b",
-        "Nvidia NVIDIA Nemotron Nano 9B v2": "nvidia.nemotron-nano-9b-v2",
-        "Nvidia NVIDIA Nemotron Nano 2": "nvidia.nemotron-nano-12b-v2",
-        "Nvidia NVIDIA Nemotron Nano 2 VL": "nvidia.nemotron-nano-12b-v2",
 
-        # Kimi K2.5 (multimodal)
-        "Moonshot AI Kimi K2.5": "moonshotai.kimi-k2.5",
+        # Kimi K3 (multimodal)
+        "Moonshot AI Kimi K3": "moonshotai.kimi-k3",
 
         # Claude models for comparison - adding with known pricing (per 1M tokens)
         # These are manually added since they may not appear in all regions in pricing API
@@ -181,7 +173,7 @@ def clean_model_display_name(raw_name):
       'Nvidia Nemotron Nano …'   -> 'Nemotron Nano …'
       'Qwen Qwen3 32B'           -> 'Qwen3 32B'
       'OpenAI gpt-oss-120b'      -> 'OpenAI gpt-oss-120b'  (no redundancy)
-      'Moonshot AI Kimi K2.5'    -> 'Moonshot AI Kimi K2.5' (no redundancy)
+      'Moonshot AI Kimi K3'      -> 'Kimi K3'
     """
     # Map: if raw_name starts with key, strip key and keep rest
     # Exact prefix -> cleaned name mappings (order matters: longest match first)
@@ -289,8 +281,12 @@ def extract_bedrock_model_pricing(verbose=False):
             if not any(region in location for region in valid_regions):
                 continue
             
-            # Focus on On-demand inference
-            if 'On-demand' not in feature:
+            # Focus on On-demand inference. Some newer models (e.g. Kimi K3) only
+            # publish entries without a 'feature', so accept their standard tier
+            if feature:
+                if 'On-demand' not in feature:
+                    continue
+            elif not usage_type.endswith('-standard'):
                 continue
             
             # Extract pricing
